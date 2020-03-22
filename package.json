@@ -1,0 +1,23 @@
+{
+  "name": "kugis-pr2-via",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/raitisbe/kugis-pr2-via.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/raitisbe/kugis-pr2-via/issues"
+  },
+  "homepage": "https://gitlab.com/raitisbe/kugis-pr2-via#readme",
+  "dependencies": {
+    "box2dweb": "^2.1.0-b",
+    "http-server": "^0.12.1"
+  }
+}

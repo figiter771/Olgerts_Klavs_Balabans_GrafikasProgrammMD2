@@ -1,0 +1,319 @@
+<html>
+
+<head>
+   <title>Box2dWeb example</title>
+</head>
+
+<body onload="init();">
+   <canvas id="canvas" width="600" height="400"></canvas>
+</body>
+<script type="text/javascript" src="node_modules/box2dweb/box2d.js"></script>
+<script type="text/javascript">
+   var world;
+   var b2Vec2 = Box2D.Common.Math.b2Vec2
+      , b2BodyDef = Box2D.Dynamics.b2BodyDef
+      , b2Body = Box2D.Dynamics.b2Body
+      , b2FixtureDef = Box2D.Dynamics.b2FixtureDef
+      , b2Fixture = Box2D.Dynamics.b2Fixture
+      , b2World = Box2D.Dynamics.b2World
+      , b2MassData = Box2D.Collision.Shapes.b2MassData
+      , b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape
+      , b2CircleShape = Box2D.Collision.Shapes.b2CircleShape
+      , b2DebugDraw = Box2D.Dynamics.b2DebugDraw
+      , b2RevoluteJointDef = Box2D.Dynamics.Joints.b2RevoluteJointDef
+      ;
+   var b2Listener = Box2D.Dynamics.b2ContactListener;
+   var modulis;
+   var ground, wall1, wall2, roof, anvil;
+   var canvas = document.getElementById("canvas");
+   var ctx = canvas.getContext("2d");
+   var img = new Image();
+   img.src = "modulis.png";
+   var ballImage = new Image();
+   ballImage.src = "ball_small.png";
+   var gunImg = new Image();
+   gunImg.src = "Machine_Gun.png";
+   var groundImg = new Image();
+   groundImg.src = "Ground_with_grass.png";
+   var anvilImage = new Image();
+   anvilImage.src = "anvil_small.png";
+   var ballArray = [];
+   function init() {
+      world = new b2World(
+         new b2Vec2(0, 10)    //gravity
+         , true                 //allow sleep
+      );
+
+      var listener = new b2Listener;
+      listener.PostSolve = function (contact, impulse) {
+
+         if (contact.GetFixtureA().GetBody() == modulis) {
+
+            if (impulse.normalImpulses[0] > 10) {
+
+               modulis.explode()
+            };
+
+
+         }
+
+      }
+      world.SetContactListener(listener);
+
+      var fixDef = new b2FixtureDef;
+      fixDef.density = 1.0;
+      fixDef.friction = 0.5;
+      fixDef.restitution = 0.2;
+
+      var bodyDef = new b2BodyDef;
+
+
+      //create ground
+      bodyDef.type = b2Body.b2_staticBody;
+      bodyDef.position.x = 9;
+      bodyDef.position.y = 13;
+      fixDef.shape = new b2PolygonShape;
+      fixDef.shape.SetAsBox(10, 1);
+      ground = world.CreateBody(bodyDef);
+      ground.CreateFixture(fixDef);
+
+
+
+      //create roof
+      bodyDef.type = b2Body.b2_staticBody;
+      bodyDef.position.x = 9;
+      bodyDef.position.y = -8;
+      fixDef.shape = new b2PolygonShape;
+      fixDef.shape.SetAsBox(10, 0.5);
+      roof = world.CreateBody(bodyDef);
+      roof.CreateFixture(fixDef);
+
+
+      //create Wall 1
+      bodyDef.type = b2Body.b2_staticBody;
+      bodyDef.position.x = 17.5;
+      bodyDef.position.y = 2.5;
+      fixDef.shape = new b2PolygonShape;
+      fixDef.shape.SetAsBox(0.5, 10);
+      wall1 = world.CreateBody(bodyDef);
+      wall1.CreateFixture(fixDef);
+
+      //create Wall 2
+      bodyDef.type = b2Body.b2_staticBody;
+      bodyDef.position.x = -0.5;
+      bodyDef.position.y = 2.5;
+      fixDef.shape = new b2PolygonShape;
+      fixDef.shape.SetAsBox(0.5, 10);
+      wall2 = world.CreateBody(bodyDef);
+      wall2.CreateFixture(fixDef);
+
+      //create Anvil
+      bodyDef.type = b2Body.b2_dynamicBody;
+      bodyDef.position.x = 9;
+      bodyDef.position.y = 9;
+      fixDef.shape = new b2PolygonShape;
+      fixDef.shape.SetAsBox(0.5, 0.5);
+      fixDef.density = 0.1;
+      anvil = world.CreateBody(bodyDef);
+      anvil.CreateFixture(fixDef);
+
+     
+
+      //Create ship
+      fixDef.shape = new b2PolygonShape;
+      var points = [{ x: -0.5, y: 0.5 }, { x: 0, y: -0.8 }, { x: 0.5, y: 0.5 }];
+      // var points = [{x: 0, y: 0}, {x: 1, y: 0}, {x: 0, y:2}];
+      fixDef.shape.SetAsArray(points, points.length);
+      bodyDef.type = b2Body.b2_dynamicBody;
+      bodyDef.position.x = 10;
+      bodyDef.position.y = 10;
+      modulis = world.CreateBody(bodyDef);
+      modulis.CreateFixture(fixDef);
+      modulis.explode = function () {
+         world.DestroyBody(modulis);
+      };
+
+      //setup debug draw
+      var debugDraw = new b2DebugDraw();
+      debugDraw.SetSprite(document.getElementById("canvas").getContext("2d"));
+      debugDraw.SetDrawScale(30.0);
+      debugDraw.SetFillAlpha(0.3);
+      debugDraw.SetLineThickness(1.0);
+      debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);
+      world.SetDebugDraw(debugDraw);
+
+      window.setInterval(update, 1000 / 60);
+
+       //Create joint between anvil and ship
+       var joint_def = new b2RevoluteJointDef();
+      joint_def.bodyA = anvil;
+      joint_def.bodyB = modulis;
+      joint_def.localAnchorA = new b2Vec2(0, -1);
+      joint_def.localAnchorB = new b2Vec2(0, 0);
+      world.CreateJoint(joint_def);
+   };
+
+   var labais_dzinejs = false;
+   var kreisais_dzinejs = false;
+   var galvenais_dzinejs = false;
+   document.onkeydown = function keyDown(e) {
+      e = e || window.event;
+      if (e.keyCode == '39') kreisais_dzinejs = true;
+      if (e.keyCode == '37') labais_dzinejs = true;
+      if (e.keyCode == '38') galvenais_dzinejs = true;
+
+      // Shoot 
+      if (e.keyCode == '32') {
+
+         for (var i = -1; i <= 1; i += 2) {
+            var fixDef = new b2FixtureDef;
+            fixDef.density = 0.1;
+
+            var bodyDef = new b2BodyDef;
+
+
+            bodyDef.type = b2Body.b2_dynamicBody; //kustas
+
+            bodyDef.position = modulis.GetWorldPoint(new b2Vec2(-0.8 * i, -0.5)); // shoot from belly of gun 
+            fixDef.shape = new b2CircleShape; // balls
+            fixDef.shape.SetRadius(0.65); // Smoll boll
+            var bully = world.CreateBody(bodyDef);
+            bully.CreateFixture(fixDef); // birth of boll
+            bully.ApplyImpulse(modulis.GetWorldVector(new b2Vec2(0, -1.5)), bully.GetWorldPoint(new b2Vec2(0, 0))); // swoosh power
+            ballArray.push(bully);
+            // kill bullies
+            setTimeout(function (b) {
+               world.DestroyBody(b);
+               ballArray.splice(ballArray.findIndex(k => k == b), 1);
+            },
+               2000, bully);
+         }
+      }
+
+   };
+
+   document.onkeyup = function keyDown(e) { //>:(
+      e = e || window.event;
+      if (e.keyCode == '39') kreisais_dzinejs = false;
+      if (e.keyCode == '37') labais_dzinejs = false;
+      if (e.keyCode == '38') galvenais_dzinejs = false;
+   };
+
+   function update() {
+      if (kreisais_dzinejs)
+         modulis.ApplyImpulse(
+            modulis.GetWorldVector(new b2Vec2(0, -0.05)),
+            modulis.GetWorldPoint(new b2Vec2(-0.3, 0))
+         );
+      if (labais_dzinejs)
+         modulis.ApplyImpulse(
+            modulis.GetWorldVector(new b2Vec2(0, -0.05)),
+            modulis.GetWorldPoint(new b2Vec2(0.3, 0))
+         );
+      if (galvenais_dzinejs)
+         modulis.ApplyImpulse(
+            modulis.GetWorldVector(new b2Vec2(0, -0.2)),
+            modulis.GetWorldCenter()
+         );
+      world.Step(
+         1 / 60   //frame-rate
+         , 10       //velocity iterations
+         , 10       //position iterations
+      );
+      ctx.clearRect(0, 0, 600, 500);
+
+      // drawWorld();
+      drawBalls();
+      drawAnvil();
+      drawShip();
+      drawGround();
+
+      world.ClearForces();
+   };
+   function setWorldCenterForCanvas() {
+      ctx.translate(-modulis.GetPosition().x * 30 + canvas.width / 2, -modulis.GetPosition().y * 30 + canvas.height / 2);
+   }
+   function adjustCanvasLocationToObject(obj) {
+      ctx.translate(
+         obj.GetPosition().x * 30,
+         obj.GetPosition().y * 30
+      );
+   }
+
+   function drawAnvil() {
+      ctx.save();
+      setWorldCenterForCanvas();
+      adjustCanvasLocationToObject(anvil);
+      ctx.drawImage(anvilImage, -35, -35);
+      ctx.restore();
+   }
+
+   function drawBalls() {
+
+      if (ballArray.length >= 1) {
+         for (var i = 0; i < ballArray.length; i++) {
+            ctx.save();
+            setWorldCenterForCanvas();
+            adjustCanvasLocationToObject(ballArray[i]);
+            ctx.drawImage(ballImage, -34, -34);
+            ctx.restore();
+         }
+      }
+
+
+   }
+
+   function drawWorld() {
+      ctx.save();
+      setWorldCenterForCanvas();
+      world.DrawDebugData();
+      ctx.restore();
+   }
+
+   function drawShip() {
+      ctx.save();
+      // world.DrawDebugData();
+      setWorldCenterForCanvas();
+      adjustCanvasLocationToObject(modulis);
+      ctx.rotate(modulis.GetAngle());
+      ctx.drawImage(img, -30, -30);
+      ctx.drawImage(gunImg, -30, -30, 30, 30)
+      ctx.scale(-1, 1)
+
+      ctx.drawImage(gunImg, -30, -30, 30, 30)
+
+      if (galvenais_dzinejs) {
+         var grd = ctx.createRadialGradient(0, 15, 0, 0, 25, 10);
+         grd.addColorStop(0, "blue");
+         grd.addColorStop(1, "transparent");
+         ctx.fillStyle = grd;
+         ctx.fillRect(-10, 20, 20, 20);
+      }
+      if (labais_dzinejs) {
+         var grd = ctx.createRadialGradient(-15, 15, 0, -15, 20, 5);
+         grd.addColorStop(0, "blue");
+         grd.addColorStop(1, "transparent");
+         ctx.fillStyle = grd;
+         ctx.fillRect(-20, 10, 20, 40);
+      }
+      if (kreisais_dzinejs) {
+         var grd = ctx.createRadialGradient(15, 15, 0, 15, 20, 5);
+         grd.addColorStop(0, "blue");
+         grd.addColorStop(1, "transparent");
+         ctx.fillStyle = grd;
+         ctx.fillRect(10, 10, 20, 40);
+      }
+      ctx.restore();
+   }
+   function drawGround() {
+      ctx.save();
+      setWorldCenterForCanvas();
+      adjustCanvasLocationToObject(ground);
+      ctx.drawImage(groundImg, -270, -295);
+      ctx.restore();
+   }
+
+</script>
+
+
+</html>
